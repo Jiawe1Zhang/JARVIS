@@ -18,6 +18,8 @@ class MCPClient:
         # Initialize session and client objects
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
+        self.stdio = None
+        self.write = None
 
     async def connect_to_server(self, server_script_path: str, command: str = "python") -> None:
         """
@@ -44,9 +46,16 @@ class MCPClient:
         } for tool in response.tools]
         print(f"\nConnected to server with available_tools:\n{json.dumps(available_tools, indent=2)}")
 
-    async def cleanup(self):
+    async def init(self, server_script_path: str, command: str = "python") -> None:
+        """
+        Convenience initializer so the caller can do:
+            client = MCPClient()
+            await client.init("mcp-server-fetch", command="uvx")
+        """
+        await self.connect_to_server(server_script_path, command=command)
+
+    async def cleanup(self) -> None:
         """
         Clean up resources
         """
         await self.exit_stack.aclose()
-
