@@ -77,4 +77,7 @@ async def main():
         )
 
 if __name__ == "__main__":
+    # 确保在 Windows 上使用正确的事件循环策略（如果需要）
+    # if sys.platform == 'win32':
+    #     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     asyncio.run(main())

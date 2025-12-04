@@ -1,9 +1,9 @@
 import json
 from typing import List, Optional
 
-from src.mcp.llm_client import ChatOpenAI
-from src.mcp.mcp_client import MCPClient
-from src.utils import log_title
+from agent.llm_client import ChatOpenAI
+from mcp_core.mcp_client import MCPClient
+from utils import log_title
 
 
 class Agent:

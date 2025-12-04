@@ -4,8 +4,8 @@ from typing import List, Optional
 
 import requests
 
-from src.utils import log_title
-from src.rag.vector_store import VectorStore
+from utils import log_title
+from rag.vector_store import VectorStore
 
 
 class EmbeddingRetriever:

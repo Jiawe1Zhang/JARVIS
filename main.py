@@ -5,12 +5,12 @@ from typing import List
 
 from dotenv import load_dotenv
 
-from src.mcp.agent import Agent
-from src.mcp.mcp_client import MCPClient
-from src.prompts.presets import SYSTEM_PROMPT
-from src.config.loader import load_user_config
-from src.utils import log_title
-from src.rag.context import retrieve_context
+from agent.agent import Agent
+from mcp_core.mcp_client import MCPClient
+from agent.presets import SYSTEM_PROMPT
+from config.loader import load_user_config
+from utils import log_title
+from rag.context import retrieve_context
 
 
 def main() -> None:

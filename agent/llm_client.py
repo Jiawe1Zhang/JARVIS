@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 
 from openai import OpenAI
 
-from src.utils import ToolCall, log_title
+from utils import ToolCall, log_title
 
 
 class ChatOpenAI:

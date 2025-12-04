@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import List
 
-from src.rag.embedding_retriever import EmbeddingRetriever
-from src.utils import log_title
+from rag.embedding_retriever import EmbeddingRetriever
+from utils import log_title
 
 
 def retrieve_context(
