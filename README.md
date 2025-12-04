@@ -6,7 +6,7 @@
 
 ![Jarvis Architecture](images/jarvis-architecture.png)
 
-## 💡 Motivation
+## Motivation
 
 This project was born out of frustration with heavy, black-box frameworks like LangChain. We've all been there: a library update breaks your RAG pipeline, or you spend hours debugging a stack trace buried 10 layers deep in abstract classes.
 
@@ -15,7 +15,7 @@ This project was born out of frustration with heavy, black-box frameworks like L
 *   **Stable**: No breaking changes every week. You own the logic.
 *   **Standardized**: Built on the **Model Context Protocol (MCP)**, not proprietary tool wrappers.
 
-## ⚡ Core Architecture
+## Core Architecture
 
 Jarvis treats the **Agent** as the absolute core. It is a custom-built reasoning engine that we "arm" with modular capabilities:
 
@@ -26,7 +26,7 @@ Jarvis treats the **Agent** as the absolute core. It is a custom-built reasoning
     *   **Smart Chunking**: Choose between "Whole Document" or "Recursive Character" splitting strategies.
     *   **Query Rewriting**: Automatically decomposes complex user tasks into targeted search queries to solve the "Lost in the Middle" problem.
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 .
@@ -45,7 +45,7 @@ Jarvis treats the **Agent** as the absolute core. It is a custom-built reasoning
 └── main.py             # Entry point
 ```
 
-## 📦 Quick Start
+## Quick Start
 
 1.  **Clone & Install**
     ```bash
@@ -83,7 +83,7 @@ Jarvis treats the **Agent** as the absolute core. It is a custom-built reasoning
     jarvis             
     ```
 
-## 🧩 Notion MCP (optional)
+## Notion MCP (optional)
 
 Connect Jarvis to Notion via MCP without touching agent logic:
 
@@ -117,14 +117,14 @@ Connect Jarvis to Notion via MCP without touching agent logic:
    ```
    Run `python main.py`. Startup logs should show Notion tools; 401/403 usually means bad token or the page was not shared with the integration.
 
-## 🚀 Jarvis Evolution Roadmap (to be updated)
+## Jarvis Evolution Roadmap (to be updated)
 
-- Phase 1 — Memory & Storage: add persistent memory and session recall so conversations and embeddings survive restarts; introduce conversation summarization to handle long histories. 
-- Phase 2 — Agent Architecture: refactor the loop into a clear planning/execution/reflect/respond flow using lightweight state management; require explicit plans before tool use. 
-- Phase 3 — Retrieval Depth: expand retrieval beyond dense vectors and add a simple graph-based context layer for richer relationship answers. 
-- Phase 4 — Ops & Evaluation: add automated RAG evaluation metrics and containerized delivery for reproducible deployments. 
+- Memory & Storage: add persistent memory and session recall so conversations and embeddings survive restarts; introduce conversation summarization to handle long histories. 
+- Agent Architecture: refactor the loop into a clear planning/execution/reflect/respond flow using lightweight state management; require explicit plans before tool use. 
+- Retrieval Depth: expand retrieval beyond dense vectors and add a simple graph-based context layer for richer relationship answers. 
+- Ops & Evaluation: add automated RAG evaluation metrics and containerized delivery for reproducible deployments. 
 
-## ✅ Features Checklist
+## Features Checklist
 
 - ✅ **MCP Integration**: Native support for Model Context Protocol tools.
 - ✅ **Multi-Format RAG**: Support for `.pdf`, `.csv`, and `.md` files.
@@ -142,6 +142,6 @@ Connect Jarvis to Notion via MCP without touching agent logic:
     - [ ] **GGUF Conversion**: Integrated `llama.cpp` conversion scripts to transform fine-tuned HF weights to `.gguf`.
     - [ ] **Ollama Import**: Auto-generate `Modelfile` and run `ollama create` to serve your custom model immediately.
 
-## 📄 License
+## License
 
 MIT License
