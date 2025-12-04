@@ -18,10 +18,10 @@ def main() -> None:
     cfg = load_user_config()
 
     # --- 读取配置 ---
-    llm_cfg = cfg.get("llm", {})
-    embed_cfg = cfg.get("embedding", {})
-    knowledge_globs = cfg.get("knowledge_globs", ["knowledge/*.md"])
-    task_template = cfg.get("task_template", "")
+    llm_cfg = cfg["llm"]
+    embed_cfg = cfg["embedding"]
+    knowledge_globs = cfg["knowledge_globs"]
+    task_template = cfg["task_template"]
 
     # --- 输出目录 ---
     output_dir = Path.cwd() / "output"
@@ -32,17 +32,18 @@ def main() -> None:
     context = retrieve_context(
         task=task_text,
         knowledge_globs=knowledge_globs,
-        embed_model=embed_cfg.get("model", "bge-m3"),
+        embed_model=embed_cfg["model"],
+        chunking_strategy=embed_cfg["chunking_strategy"],
     )
 
     # --- MCP Servers ---
     mcp_clients = []
-    for server in cfg.get("mcp_servers", []):
-        args = [arg.replace("{output_dir}", str(output_dir)) for arg in server.get("args", [])]
+    for server in cfg["mcp_servers"]:
+        args = [arg.replace("{output_dir}", str(output_dir)) for arg in server["args"]]
         mcp_clients.append(MCPClient(command=server["command"], args=args))
 
     # --- Agent (model 从配置读，其他从 .env) ---
-    model_name = llm_cfg.get("model", "gpt-4o")
+    model_name = llm_cfg["model"]
     agent = Agent(model_name, mcp_clients, context=context, system_prompt=SYSTEM_PROMPT)
 
     async def run_agent():

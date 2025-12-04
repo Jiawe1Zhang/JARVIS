@@ -1,12 +1,13 @@
 {
-  "task_template": "Jarvis 是一个刚入学ZJU的计算机科学系的学生, Jarvis想要统计今年他们学院的录取情况, 顺便通过分析来自和他同专业同学A的高考情况来分析他后面同学A的竞争情况!你的分析要简短简洁but必须分析得有道理, 把他对在ZJU和同学A学习竞争情况的分析保存到{output_path}/zjuanalysis.md, 输出一个漂亮md文件",
+  "task_template": "Jarvis 是一个刚入学ZJU的医学系的学生, Jarvis想要统计今年他们医学院的录取情况, 顺便通过分析来自和他同专业同学B的高考情况来分析他后面同学B的竞争情况!你的分析要简短简洁but必须分析得有道理, 把他对在ZJU和同学B学习竞争情况的分析保存到{output_path}/zjuanalysisB.md, 输出一个漂亮md文件",
   "knowledge_globs": ["knowledge/*.md", "knowledge/*.pdf", "knowledge/*.csv"],
   "output_dir": "output",
   "llm": {
     "model": "gpt-5"
   },
   "embedding": {
-    "model": "bge-m3"
+    "model": "bge-m3",
+    "chunking_strategy": "recursive"
   },
   "vector_store": {
     "backend": "memory"

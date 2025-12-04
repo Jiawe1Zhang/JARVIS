@@ -10,6 +10,7 @@ def retrieve_context(
     task: str,
     knowledge_globs: List[str],
     embed_model: str,
+    chunking_strategy: str = "whole",
 ) -> str:
     """
     Embed knowledge sources and retrieve top matches for the given task.
@@ -18,11 +19,12 @@ def retrieve_context(
         task: 任务描述，用于检索相关上下文
         knowledge_globs: 知识文件的 glob 模式列表
         embed_model: embedding 模型名称
+        chunking_strategy: 切分策略 ("whole" or "recursive")
         
     Note:
         base_url 和 api_key 统一从 .env 环境变量读取
     """
-    retriever = EmbeddingRetriever(model=embed_model)
+    retriever = EmbeddingRetriever(model=embed_model, chunking_strategy=chunking_strategy)
     for pattern in knowledge_globs:
         for file_path in sorted(Path.cwd().glob(pattern)):
             if not file_path.is_file():

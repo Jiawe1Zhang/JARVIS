@@ -6,6 +6,8 @@ import requests
 
 from utils import log_title
 from rag.vector_store import VectorStore
+from rag.chunk.recursive import RecursiveCharacterTextSplitter
+from rag.chunk.recursive import RecursiveCharacterTextSplitter
 
 
 class EmbeddingRetriever:
@@ -25,11 +27,16 @@ class EmbeddingRetriever:
         model: str,
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
+        chunking_strategy: str = "whole",  # "whole" or "recursive"
     ) -> None:
         self.model = model
         self.base_url = base_url
         self.api_key = api_key
+        self.chunking_strategy = chunking_strategy
         self.vector_store = VectorStore()
+        
+        # 初始化切分器
+        self.recursive_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
         
         # 确定使用哪种 API
         self._detect_api_type()
@@ -68,11 +75,29 @@ class EmbeddingRetriever:
                 "3. 环境变量 OLLAMA_EMBED_BASE_URL"
             )
 
-    def embed_document(self, document: str) -> List[float]:
+    def embed_document(self, document: str) -> Optional[List[float]]:
         log_title("EMBEDDING DOCUMENT")
-        embedding = self._embed(document)
-        self.vector_store.add_embedding(embedding, document)
-        return embedding
+        
+        chunks = []
+        # Check strategy (default to whole if not set)
+        strategy = getattr(self, 'chunking_strategy', 'whole')
+        
+        if strategy == "recursive":
+            chunks = self.recursive_splitter.split_text(document)
+            print(f"  - Splitting document into {len(chunks)} chunks (Recursive)")
+        else:
+            chunks = [document]
+            print(f"  - Using whole document as 1 chunk (Default)")
+            
+        last_embedding = None
+        for chunk in chunks:
+            if not chunk.strip():
+                continue
+            embedding = self._embed(chunk)
+            self.vector_store.add_embedding(embedding, chunk)
+            last_embedding = embedding
+            
+        return last_embedding
 
     def embed_query(self, query: str) -> List[float]:
         log_title("EMBEDDING QUERY")
