@@ -4,6 +4,8 @@
 
 > "Stop fighting the framework. Start building the agent."
 
+![Jarvis Architecture](JARVIS.png)
+
 ## 💡 Motivation
 
 This project was born out of frustration with heavy, black-box frameworks like LangChain. We've all been there: a library update breaks your RAG pipeline, or you spend hours debugging a stack trace buried 10 layers deep in abstract classes.
