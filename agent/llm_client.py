@@ -28,7 +28,6 @@ class ChatOpenAI:
         )
         resolved_api_key = api_key or os.environ.get("OPENAI_API_KEY")
         if not resolved_api_key and resolved_base_url:
-            # Ollama 等本地端点不校验 key，给一个占位符即可。
             resolved_api_key = "ollama"
         if not resolved_api_key:
             raise RuntimeError("OPENAI_API_KEY must be set (or provide api_key manually)")

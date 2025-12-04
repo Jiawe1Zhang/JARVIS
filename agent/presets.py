@@ -1,8 +1,3 @@
-"""
-System-level prompts kept here (用户输入/任务模板请放 config).
-"""
-
-# 系统提示，说明工具调用流程与约束
 SYSTEM_PROMPT = """
 You are an intelligent assistant equipped with specific tools.
 
