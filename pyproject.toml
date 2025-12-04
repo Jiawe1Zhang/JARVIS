@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jarvis-agent"
+version = "0.1.0"
+description = "A lightweight MCP + RAG agent framework."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "mcp==1.22.0",
+  "openai==2.8.1",
+  "python-dotenv==1.2.1",
+  "requests==2.32.5",
+  "pydantic==2.12.5",
+  "anyio==4.12.0",
+  "pypdf>=3.0.0",
+  "rich>=13.7.0",
+]
+
+[project.scripts]
+jarvis = "jarvis_cli:cli"
+
+[tool.setuptools]
+py-modules = ["jarvis_cli"]
+
+[tool.setuptools.packages.find]
+include = ["agent", "config", "mcp_core", "rag", "utils"]
+
+[tool.setuptools.package-data]
+"prompts" = ["*.md"]
+"knowledge" = ["*.md", "*.pdf", "*.csv"]
