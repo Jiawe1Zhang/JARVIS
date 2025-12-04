@@ -112,3 +112,46 @@ class ChatOpenAI:
             }
             for tool in self.tools
         ]
+
+
+class SimpleLLMClient:
+    """
+    A stateless, lightweight LLM client for single-turn tasks like Query Rewriting.
+    """
+
+    def __init__(
+        self,
+        model: str = "gpt-4o",
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+    ) -> None:
+        resolved_base_url = (
+            base_url
+            or os.environ.get("OPENAI_BASE_URL")
+            or os.environ.get("OLLAMA_BASE_URL")
+        )
+        resolved_api_key = api_key or os.environ.get("OPENAI_API_KEY")
+        if not resolved_api_key and resolved_base_url:
+            resolved_api_key = "ollama"
+
+        self.client = OpenAI(
+            api_key=resolved_api_key,
+            base_url=resolved_base_url,
+        )
+        self.model = model
+
+    def generate(self, prompt: str, system_prompt: str = "") -> str:
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+            )
+            return response.choices[0].message.content or ""
+        except Exception as e:
+            print(f"SimpleLLMClient error: {e}")
+            return ""
