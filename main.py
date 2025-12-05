@@ -22,6 +22,7 @@ def main() -> None:
     embed_cfg = cfg["embedding"]
     knowledge_globs = cfg["knowledge_globs"]
     task_template = cfg["task_template"]
+    vector_store_cfg = cfg.get("vector_store", {})
 
     # --- Output Directory ---
     output_dir = Path.cwd() / "output"
@@ -37,6 +38,7 @@ def main() -> None:
         enable_rewrite=embed_cfg["enable_query_rewrite"],
         rewrite_num_queries=embed_cfg.get("rewrite_num_queries", 3),
         llm_model=llm_cfg["model"],
+        vector_store_config=vector_store_cfg,
     )
 
     # --- MCP Servers ---

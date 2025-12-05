@@ -16,6 +16,7 @@ def retrieve_context(
     enable_rewrite: bool = False,
     rewrite_num_queries: int = 3,
     llm_model: Optional[str] = None,
+    vector_store_config: Optional[dict] = None,
 ) -> str:
     """
     Embed knowledge sources and retrieve top matches for the given task.
@@ -28,11 +29,16 @@ def retrieve_context(
         enable_rewrite: Whether to enable query rewriting
         rewrite_num_queries: Number of queries to generate if rewriting is enabled
         llm_model: LLM model name for query rewriting
+        vector_store_config: Vector store backend config (memory/faiss, paths, etc.)
         
     Note:
         base_url and api_key are read from .env environment variables
     """
-    retriever = EmbeddingRetriever(model=embed_model, chunking_strategy=chunking_strategy)
+    retriever = EmbeddingRetriever(
+        model=embed_model,
+        chunking_strategy=chunking_strategy,
+        vector_store_config=vector_store_config,
+    )
     for pattern in knowledge_globs:
         for file_path in sorted(Path.cwd().glob(pattern)):
             if not file_path.is_file():
@@ -70,4 +76,6 @@ def retrieve_context(
     context = "\n\n".join(all_results)
     log_title("CONTEXT")
     print(context)
+    # 保存向量索引（仅对支持持久化的后端有效，例如 FAISS）
+    retriever.save_if_possible()
     return context

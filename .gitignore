@@ -28,3 +28,11 @@ coverage.xml
 *.cover
 *.log
 .pytest_cache/
+
+
+
+
+# vector store data
+data/*.index
+data/*.meta.json
+data/faiss*

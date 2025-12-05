@@ -71,7 +71,7 @@ class Agent:
                         continue
                     log_title("TOOL USE")
                     print(f"Calling tool: {tool_name}")
-                    print(f"Arguments: {tool_args_dict}")
+                    print(f"Arguments: {self._preview(tool_args_dict)}")
                     try:
                         result = await mcp.call_tool(
                             tool_name,
@@ -90,7 +90,7 @@ class Agent:
                             result = serialized_result
                     except Exception as exc:
                         result = {"error": str(exc)}
-                    print(f"Result: {result}")
+                    print(f"Result (preview): {self._preview(result)}")
                     self.llm.append_tool_result(tool_id, json.dumps(result))
                 response = self.llm.chat()
                 continue
@@ -103,3 +103,16 @@ class Agent:
                 if tool["name"] == tool_name:
                     return client
         return None
+
+    @staticmethod
+    def _preview(data: object, limit: int = 400) -> str:
+        """
+        Compact preview for logging to avoid flooding the terminal.
+        """
+        try:
+            text = json.dumps(data, ensure_ascii=False)
+        except Exception:
+            text = str(data)
+        if len(text) > limit:
+            return text[:limit] + "...(truncated)"
+        return text

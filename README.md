@@ -83,6 +83,25 @@ Jarvis treats the **Agent** as the absolute core. It is a custom-built reasoning
     jarvis             
     ```
 
+## Optional: FAISS Vector Store
+
+- Install FAISS (macOS Apple Silicon: `conda install -c conda-forge faiss-cpu`; Intel/mac often `pip install faiss-cpu`, otherwise conda).
+- Vector store config options in `config/user_config.json`:
+  - Memory (default):
+    ```json
+    "vector_store": { "backend": "memory" }
+    ```
+  - FAISS:
+  ```json
+  "vector_store": {
+    "backend": "faiss",
+    "index_factory": "Flat",
+    "path": "data/faiss.index",
+    "meta_path": "data/faiss.meta.json"
+  }
+  ```
+- Keep `"backend": "memory"` to use the built-in in-memory store.
+
 ## Notion MCP (optional)
 
 Connect Jarvis to Notion via MCP without touching agent logic:
