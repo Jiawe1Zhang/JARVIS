@@ -1,32 +1,20 @@
-# Jarvis (Just IronMan's Assistant as you know)
-
-**A lightweight, transparent, and developer-first AI Agent framework.**
-
-> "Stop fighting the framework. Start building the agent."
-
 ![Jarvis Architecture](images/jarvis-architecture.png)
 
-## Motivation
+**A lightweight, transparent, and developer-first Agent framework.**
 
-This project was born out of frustration with heavy, black-box frameworks like LangChain. We've all been there: a library update breaks your RAG pipeline, or you spend hours debugging a stack trace buried 10 layers deep in abstract classes.
+> The Toolbox for Agent Engineering returning the power of customization and logic design back to developers.
 
-**Jarvis is different.** It is "hand-crafted" from first principles to be:
-*   **Transparent**: No hidden magic. You can see the `while` loop that runs your agent.
-*   **Stable**: No breaking changes every week. You own the logic.
-*   **Standardized**: Built on the **Model Context Protocol (MCP)**, not proprietary tool wrappers.
+## Motivation and Goals
 
-## Core Architecture
+**Motivation (you can skip this part but wish someone know me)**\
+A girl born in SAO. A voice in the helmet. I will code until the code breathes.\
+In every world, my sword belongs to Asuna.
 
-Jarvis treats the **Agent** as the absolute core. It is a custom-built reasoning engine that we "arm" with modular capabilities:
+**An Evolving Arsenal of Paradigms**\
+From traditional RAG to Knowledge Graphs, from simple State Machines to cutting-edge Agentic RAG (where the agent designs its own retrieval strategy). Jarvis is a "Living Library" of SOTA implementations. We provide the fragmented "LEGO bricks" of the latest academic papers, allowing you to assemble a custom workflow that fits your specific business needs—whether it's a simple FAQ bot or a complex Multi-Agent system.
 
-1.  **The Brain (Agent)**: A pure Python implementation of the ReAct/Loop pattern. It handles reasoning, planning, and execution without heavy abstractions.
-2.  **The Hands (MCP_CORE)**: Instead of hard-coding tools, Jarvis implements a native **MCP Client**. It connects to any standard MCP Server (Filesystem, Git, Fetch) or your own custom Python scripts.
-3.  **The Memory (RAG)**: A controllable, lightweight RAG pipeline.
-    *   **Multi-Format**: Native support for `.pdf`, `.csv`, and `.md`.
-    *   **Smart Chunking**: Choose between "Whole Document" or "Recursive Character" splitting strategies.
-    *   **Query Rewriting**: Automatically decomposes complex user tasks into targeted search queries to solve the "Lost in the Middle" problem.
 
-## Project Structure
+## Project Structure (Now)
 
 ```text
 .
@@ -45,7 +33,7 @@ Jarvis treats the **Agent** as the absolute core. It is a custom-built reasoning
 └── main.py             # Entry point
 ```
 
-## Quick Start
+## Quick Start (Now)
 
 1.  **Clone & Install**
     ```bash
@@ -67,9 +55,9 @@ Jarvis treats the **Agent** as the absolute core. It is a custom-built reasoning
     ```json
     "embedding": {
       "model": "bge-m3",
-      "chunking_strategy": "recursive",  // "whole" or "recursive"
-      "enable_query_rewrite": true,      // Enable LLM-based query decomposition
-      "rewrite_num_queries": 3           // Number of sub-queries to generate
+      "chunking_strategy": "recursive",  
+      "enable_query_rewrite": true,      
+      "rewrite_num_queries": 3          
     }
     ```
 
@@ -134,32 +122,39 @@ Connect Jarvis to Notion via MCP without touching agent logic:
      }
    }
    ```
-   Run `python main.py`. Startup logs should show Notion tools; 401/403 usually means bad token or the page was not shared with the integration.
+ 
 
-## Jarvis Evolution Roadmap (to be updated)
-
-- Memory & Storage: add persistent memory and session recall so conversations and embeddings survive restarts; introduce conversation summarization to handle long histories. 
-- Agent Architecture: refactor the loop into a clear planning/execution/reflect/respond flow using lightweight state management; require explicit plans before tool use. 
-- Retrieval Depth: expand retrieval beyond dense vectors and add a simple graph-based context layer for richer relationship answers. 
-- Ops & Evaluation: add automated RAG evaluation metrics and containerized delivery for reproducible deployments. 
-
-## Features Checklist
+## Evolution Roadmap (to be updated)
 
 - ✅ **MCP Integration**: Native support for Model Context Protocol tools.
-- ✅ **Multi-Format RAG**: Support for `.pdf`, `.csv`, and `.md` files.
-- ✅ **Advanced RAG Strategies**:
+    - 😂**Still need More MCP tools support**
+
+- ✅ **RAG Strategies**:
+    - ✅ **Multi-Format document Process**: Support for `.pdf`, `.csv`, and `.md` files.
     - ✅ Recursive Character Text Splitting.
     - ✅ Query Rewriting (LLM-based).
     - [ ] **Reranking**: Cross-encoder based result re-ordering.
-    - [ ] **Advanced Chunking**: Semantic and Agentic splitting strategies.
+    - [ ] **More Advanced Chunking**: like Semantic and Agentic splitting strategies etc.
     - [ ] **Hybrid Search**: Vector + Keyword (BM25) retrieval.
-- [ ] **Advanced Vector Stores**: Support for Milvus/Chroma (Currently In-Memory).
-- [ ] **ReAct Optimization**: Enhanced fallback strategies for local SLMs.
-- [ ] **Local Fine-tuning Pipeline (Model Ops)**:
-    - [ ] **Hugging Face Integration**: Script to download base models (e.g., Llama-3, Qwen) directly from HF/ModelScope.
+    - [ ] **More Vector Databases support**: Support for Milvus/Chroma. Now Faiss is supported.
+    - [ ] **GraphRAG (The Killer Feature)**
+    - [ ] **Agentic RAG😯**
+
+- [ ] **Agent Workflows Optimization**: Now just ReAct, I will update more workflows in the future.
+    - [ ]: **Session Management**: Short-term and Long-term Memory 
+    - [ ]: **Memory Summarization**
+    - [ ]: **Multiple Agents** 
+    - [ ]: ☹️**State Definition and State Graph (DAG)**: Plan, Execute, Reflect, Response & Plan n stpes -> execute ->execute -> response
+- [ ] **Local Fine-tuning Pipeline (Model Ops)**:(Recently working on it)
     - [ ] **LLaMA-Factory Bridge**: Automated config generation to trigger LoRA/Full fine-tuning jobs using your RAG data.
-    - [ ] **GGUF Conversion**: Integrated `llama.cpp` conversion scripts to transform fine-tuned HF weights to `.gguf`.
-    - [ ] **Ollama Import**: Auto-generate `Modelfile` and run `ollama create` to serve your custom model immediately.
+- [ ] **Evaluation**🤔
+
+
+
+
+## Call for Community
+
+Jarvis is built for developers who want to stay on the bleeding edge. If you see a new paper, a new RAG paradigm, or a better planning algorithm that isn't here yet: Tell me in the Issues. I will commit to deconstructing the latest innovations into lightweight, usable blocks.
 
 ## License
 
