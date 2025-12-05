@@ -12,7 +12,10 @@
     "rewrite_num_queries": 3
   },
   "vector_store": {
-    "backend": "memory"
+    "backend": "memory", 
+    "index_factory": "FlatL2",
+    "path": "data/faiss.index",
+    "meta_path": "data/faiss.meta.json"
   },
   "mcp_servers": [
     {
