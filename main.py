@@ -27,6 +27,7 @@ def main() -> None:
     task_template = cfg["task_template"]
     vector_store_cfg = cfg.get("vector_store", {})
     conversation_cfg = cfg.get("conversation_logging", {})
+    rag_cfg = cfg.get("rag", {"enabled": True})
 
     # --- Output Directory ---
     output_dir = Path.cwd() / "output"
@@ -49,17 +50,21 @@ def main() -> None:
         session_store = SessionStore(db_path)
 
     # --- Embedding & RAG (base_url/api_key read from .env) ---
-    context = retrieve_context(
-        task=task_text,
-        knowledge_globs=knowledge_globs,
-        embed_model=embed_cfg["model"],
-        chunking_strategy=embed_cfg["chunking_strategy"],
-        enable_rewrite=embed_cfg["enable_query_rewrite"],
-        rewrite_num_queries=embed_cfg.get("rewrite_num_queries", 3),
-        llm_model=llm_cfg["model"],
-        vector_store_config=vector_store_cfg,
-        tracer=tracer,
-    )
+    context = ""
+    if rag_cfg.get("enabled", True):
+        context = retrieve_context(
+            task=task_text,
+            knowledge_globs=knowledge_globs,
+            embed_model=embed_cfg["model"],
+            chunking_strategy=embed_cfg["chunking_strategy"],
+            enable_rewrite=embed_cfg["enable_query_rewrite"],
+            rewrite_num_queries=embed_cfg.get("rewrite_num_queries", 3),
+            llm_model=llm_cfg["model"],
+            vector_store_config=vector_store_cfg,
+            tracer=tracer,
+        )
+    else:
+        tracer.info("rag_disabled", {"reason": "config.disabled"})
 
     # --- MCP Servers ---
     mcp_clients = []

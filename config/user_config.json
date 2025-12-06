@@ -21,7 +21,8 @@
     "enabled": true,
     "backend": "sqlite",
     "db_path": "data/sessions.db",
-    "session_id": "1"
+    "session_id": "1",
+    "max_history": 50
   },
   "mcp_servers": [
     {

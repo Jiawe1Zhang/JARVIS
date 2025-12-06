@@ -90,6 +90,11 @@ From traditional RAG to Knowledge Graphs, from simple State Machines to cutting-
   ```
 - Keep `"backend": "memory"` to use the built-in in-memory store.
 
+## Optional: Toggle RAG
+
+- `rag.enabled` controls whether local knowledge retrieval runs for the task. Set to `false` to run pure chat without injecting RAG context.
+- Later, I will make Agentic RAG! Looking forward it!
+
 ## Optional: Conversation History
 
 - Enable in `config/user_config.json`:
