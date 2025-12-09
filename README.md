@@ -4,15 +4,6 @@
 
 > The Toolbox for Agent Engineering returning the power of customization and logic design back to developers.
 
-## Motivation and Goals
-
-**Motivation (you can skip this part but wish someone know me)**\
-A girl born in SAO. A voice in the helmet. I will code until the code breathes.\
-In every world, my sword belongs to Asuna.
-
-**An Evolving Arsenal of Paradigms**\
-From traditional RAG to Knowledge Graphs, from simple State Machines to cutting-edge Agentic RAG (where the agent designs its own retrieval strategy). Jarvis is a "Living Library" of SOTA implementations. We provide the fragmented "LEGO bricks" of the latest academic papers, allowing you to assemble a custom workflow that fits your specific business needs—whether it's a simple FAQ bot or a complex Multi-Agent system.
-
 
 ## Project Structure (Now)
 
@@ -148,6 +139,10 @@ Connect Jarvis to Notion via MCP without touching agent logic:
 
 - MCP tools: e.g., `mcp-simple-arxiv` (MIT License, Andy Brandt). 
 
+## Agent Architecture Tricks in Recent Papers
+
+- Agentic Plan Caching: Test-Time Memory for Fast and Cost-Efficient LLM Agents : https://openreview.net/forum?id=n4V3MSqK77
+
 
 ## Evolution Roadmap (to be updated)
 
@@ -187,10 +182,6 @@ Connect Jarvis to Notion via MCP without touching agent logic:
   ```bash
   python rag/import_to_sqlite.py --config config/user_config.json --db data/knowledge.db --table docs
   ```
-
-
-
-
 
 ## Call for Community
 

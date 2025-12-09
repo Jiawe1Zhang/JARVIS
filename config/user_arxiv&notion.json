@@ -1,5 +1,5 @@
 {
-  "task_template": "帮我在数据库中查一下2024年zju的计算机学院录取情况如何?",
+  "task_template": "帮我在arxiv找些图神经网络的文章, 并且把他们的一些核心实验方法总结到我的一个新的Notion页面里, 标题要加上",
   "knowledge_globs": ["knowledge/*.md", "knowledge/*.pdf", "knowledge/*.csv"],
   "output_dir": "output",
   "llm": {
