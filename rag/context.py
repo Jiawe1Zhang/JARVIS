@@ -6,6 +6,7 @@ from rag.embedding_retriever import EmbeddingRetriever
 from rag.loader import load_file
 from rag.query_rewriter import QueryRewriter
 from utils import log_title
+from utils.ui import BaseUI
 
 
 def retrieve_context(
@@ -18,6 +19,7 @@ def retrieve_context(
     llm_model: Optional[str] = None,
     vector_store_config: Optional[dict] = None,
     tracer=None,
+    ui: Optional[BaseUI] = None,
 ) -> str:
     """
     Embed knowledge sources and retrieve top matches for the given task.
@@ -35,6 +37,9 @@ def retrieve_context(
     Note:
         base_url and api_key are read from .env environment variables
     """
+    ui = ui or BaseUI()
+    if ui.enabled:
+        ui.stage("RAG Retrieval", "in_progress")
     data_signature = _compute_data_signature(knowledge_globs)
     retriever = EmbeddingRetriever(
         model=embed_model,
@@ -55,6 +60,8 @@ def retrieve_context(
     if tracer and reuse_index:
         tracer.log_event({"type": "context_reuse_index", "size": getattr(retriever.vector_store, "size", lambda: None)() if retriever.vector_store else None})
     if not reuse_index:
+        if ui.enabled:
+            ui.detail("RAG", "Indexing knowledge base...")
         for pattern in knowledge_globs:
             for file_path in sorted(Path.cwd().glob(pattern)):
                 if not file_path.is_file():
@@ -70,10 +77,17 @@ def retrieve_context(
     # --- Retrieval Logic ---
     search_queries = [task]
     if enable_rewrite and llm_model:
-        print("Rewriting query...")
+        if ui.enabled:
+            ui.stage("Query Rewriting", "in_progress")
+            ui.log("System", "Rewriting query...")
         rewriter = QueryRewriter(llm_model)
         rewritten_queries = rewriter.rewrite(task, num_queries=rewrite_num_queries)
-        print(f"Rewritten queries: {rewritten_queries}")
+        if ui.enabled:
+            ui.log("System", f"Rewritten queries: {rewritten_queries}")
+            ui.stage("Query Rewriting", "completed")
+        else:
+            print("Rewriting query...")
+            print(f"Rewritten queries: {rewritten_queries}")
         search_queries.extend(rewritten_queries)
 
     all_results = []
@@ -90,8 +104,12 @@ def retrieve_context(
                 seen_texts.add(text)
 
     context = "\n\n".join(all_results)
-    log_title("CONTEXT")
-    print(context)
+    if ui.enabled:
+        ui.detail("RAG Context", context if context else "[dim]No context retrieved[/dim]")
+        ui.stage("RAG Retrieval", "completed")
+    else:
+        log_title("CONTEXT")
+        print(context)
     # 保存向量索引（仅对支持持久化的后端有效，例如 FAISS）
     retriever.save_if_possible()
     if tracer:

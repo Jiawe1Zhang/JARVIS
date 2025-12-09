@@ -24,6 +24,9 @@
     "session_id": "1",
     "max_history": 5
   },
+  "tui": {
+    "enabled": false
+  },
   "rag": {
     "enabled": true
   },

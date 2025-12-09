@@ -13,7 +13,8 @@ from utils.prompt_loader import load_prompt
 from rag.context import retrieve_context
 from utils.tracer import RunTracer
 from utils.session_store import SessionStore
-from datetime import datetime
+from datetime import datetime, timezone
+from utils.ui import get_ui
 
 
 def main() -> None:
@@ -28,6 +29,8 @@ def main() -> None:
     vector_store_cfg = cfg.get("vector_store", {})
     conversation_cfg = cfg.get("conversation_logging", {})
     rag_cfg = cfg.get("rag", {"enabled": True})
+    ui_cfg = cfg.get("tui", {"enabled": False})
+    ui = get_ui(ui_cfg.get("enabled", False))
 
     # --- Output Directory ---
     output_dir = Path.cwd() / "output"
@@ -35,7 +38,7 @@ def main() -> None:
     task_text = task_template.format(output_path=str(output_dir))
 
     # --- Tracer Directory ---
-    run_id = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     tracer_dir = Path.cwd() / "logs" / run_id
     tracer = RunTracer(tracer_dir)
     tracer.info("run_start", {"task": task_text})
@@ -63,6 +66,7 @@ def main() -> None:
             llm_model=llm_cfg["model"],
             vector_store_config=vector_store_cfg,
             tracer=tracer,
+            ui=ui,
         )
     else:
         tracer.info("rag_disabled", {"reason": "config.disabled"})
@@ -96,6 +100,7 @@ def main() -> None:
         session_store=session_store,
         session_id=session_id,
         max_history_turns=max_history_turns,
+        ui=ui,
     )
 
     async def run_agent():
@@ -107,7 +112,8 @@ def main() -> None:
             await agent.close()
 
     try:
-        asyncio.run(run_agent())
+        with ui.live():
+            asyncio.run(run_agent())
     except Exception as exc:
         tracer.info("run_error", {"error": str(exc)})
         raise

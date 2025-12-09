@@ -102,6 +102,14 @@
 - Load order when enabled: system prompt → prior turns (from SQLite, capped by `max_history` turns) → current run context (RAG) → new user/assistant/tool turns. The API always receives a single flat `messages` list (no nested arrays).
 - Tracer logs remain separate under `logs/<run_id>/events.jsonl`.
 
+## Optional: Rich TUI (agent loop dashboard)
+
+- Enable in config:
+  ```json
+  "tui": { "enabled": true }
+  ```
+- When enabled and `rich` is installed, Jarvis renders a split-screen terminal UI showing workflow stages, recent messages/tool calls, and a detail panel for RAG context or tool results. Disable (`false`) to fall back to classic prints.
+
 ## Optioanl: Notion MCP 
 
 Connect Jarvis to Notion via MCP without touching agent logic:

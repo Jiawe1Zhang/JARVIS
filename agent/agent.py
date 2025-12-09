@@ -4,6 +4,7 @@ from typing import List, Optional
 from agent.llm_client import ChatOpenAI
 from mcp_core.mcp_client import MCPClient
 from utils import log_title
+from utils.ui import BaseUI
 
 
 class Agent:
@@ -21,6 +22,7 @@ class Agent:
         session_store=None,
         session_id: str = "default",
         max_history_turns: Optional[int] = None,
+        ui: Optional[BaseUI] = None,
     ) -> None:
         self.mcp_clients = mcp_clients
         self.system_prompt = system_prompt
@@ -31,9 +33,13 @@ class Agent:
         self.session_store = session_store
         self.session_id = session_id
         self.max_history_turns = max_history_turns
+        self.ui = ui or BaseUI()
 
     async def init(self) -> None:
-        log_title("TOOLS")
+        if self.ui.enabled:
+            self.ui.stage("Initialization", "in_progress")
+        else:
+            log_title("TOOLS")
         for client in self.mcp_clients:
             await client.init()
 
@@ -54,7 +60,10 @@ class Agent:
             session_store=self.session_store,
             session_id=self.session_id,
             max_history_turns=self.max_history_turns,
+            ui=self.ui,
         )
+        if self.ui.enabled:
+            self.ui.stage("Initialization", "completed")
 
     async def close(self) -> None:
         for client in self.mcp_clients:
@@ -64,6 +73,10 @@ class Agent:
         if not self.llm:
             raise RuntimeError("Agent not initialized")
 
+        if self.ui.enabled:
+            self.ui.stage("Agent Reasoning", "in_progress")
+            self.ui.log("User", prompt)
+
         # 拿到的返回response里有 content 和 tool_calls
         response = self.llm.chat(prompt)
         while True:
@@ -72,13 +85,21 @@ class Agent:
 
             # 如果有内容，先打印出来；若为空但有工具调用，打印占位
             if content:
-                log_title("LLM OUTPUT")
-                print(f"[MODEL] {content}")
+                if self.ui.enabled:
+                    self.ui.log("Model", content)
+                else:
+                    log_title("LLM OUTPUT")
+                    print(f"[MODEL] {content}")
             elif tool_calls:
-                print("[MODEL] (tool call, no content)")
+                if not self.ui.enabled:
+                    print("[MODEL] (tool call, no content)")
             # 纯原生 Function Calling，不使用兜底策略
             if tool_calls:
-                print(f"[Native Function Calling] 检测到 {len(tool_calls)} 个工具调用")
+                if self.ui.enabled:
+                    self.ui.stage("Agent Reasoning", "completed")
+                    self.ui.stage("Tool Execution", "in_progress")
+                else:
+                    print(f"[Native Function Calling] 检测到 {len(tool_calls)} 个工具调用")
                 for tool_call in tool_calls:
                     tool_name = tool_call.name
                     tool_args = tool_call.arguments
@@ -92,9 +113,12 @@ class Agent:
                     if not mcp:
                         self.llm.append_tool_result(tool_id, "Tool not found")
                         continue
-                    log_title("TOOL USE")
-                    print(f"Calling tool: {tool_name}")
-                    print(f"Arguments: {self._preview(tool_args_dict)}")
+                    if self.ui.enabled:
+                        self.ui.tool(tool_name, tool_args_dict)
+                    else:
+                        log_title("TOOL USE")
+                        print(f"Calling tool: {tool_name}")
+                        print(f"Arguments: {self._preview(tool_args_dict)}")
                     try:
                         result = await mcp.call_tool(
                             tool_name,
@@ -113,7 +137,12 @@ class Agent:
                             result = serialized_result
                     except Exception as exc:
                         result = {"error": str(exc)}
-                    print(f"Result (preview): {self._preview(result)}")
+                    if self.ui.enabled:
+                        preview = self._preview(result)
+                        self.ui.detail(f"Result: {tool_name}", preview)
+                        self.ui.tool(tool_name, tool_args_dict, preview)
+                    else:
+                        print(f"Result (preview): {self._preview(result)}")
                     if self.tracer:
                         self.tracer.log_event(
                             {
@@ -124,8 +153,14 @@ class Agent:
                             }
                         )
                     self.llm.append_tool_result(tool_id, json.dumps(result))
+                if self.ui.enabled:
+                    self.ui.stage("Tool Execution", "completed")
+                    self.ui.stage("Agent Reasoning", "in_progress")
                 response = self.llm.chat()
                 continue
+            if self.ui.enabled:
+                self.ui.stage("Agent Reasoning", "completed")
+                self.ui.stage("Final Response", "completed")
             return content
 
     def flush_history(self) -> None:

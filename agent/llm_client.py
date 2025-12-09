@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 from openai import OpenAI
 
 from utils import ToolCall, log_title
+from utils.ui import BaseUI
 from utils.tracer import RunTracer
 from utils.session_store import SessionStore
 
@@ -25,6 +26,7 @@ class ChatOpenAI:
         session_store: Optional[SessionStore] = None,
         session_id: Optional[str] = None,
         max_history_turns: Optional[int] = None,
+        ui: Optional[BaseUI] = None,
     ) -> None:
         # Support either cloud (OpenAI-compatible) or local (e.g., Ollama) endpoints.
         resolved_base_url = (
@@ -48,6 +50,7 @@ class ChatOpenAI:
         self.session_store = session_store
         self.session_id = session_id or "default"
         self.max_history_turns = max_history_turns if max_history_turns and max_history_turns > 0 else None
+        self.ui = ui or BaseUI()
         # buffer for current turn
         self._pending_turn: List[Dict[str, Any]] = []
         # system prompt first
@@ -66,7 +69,8 @@ class ChatOpenAI:
             self.messages.append({"role": "user", "content": context})
 
     def chat(self, prompt: Optional[str] = None) -> Dict[str, Any]:
-        log_title("CHAT")
+        if not self.ui.enabled:
+            log_title("CHAT")
         if prompt:
             user_msg = {"role": "user", "content": prompt}
             # 消息列表最后加入用户的 prompt
@@ -97,9 +101,10 @@ class ChatOpenAI:
             for tool_call in choice.tool_calls or []
         ]
 
-        log_title("RESPONSE")
-        if content:
-            print(content)
+        if not self.ui.enabled:
+            log_title("RESPONSE")
+            if content:
+                print(content)
 
         if self.tracer:
             self.tracer.log_event(
