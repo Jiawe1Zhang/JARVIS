@@ -69,8 +69,5 @@ You’ll be prompted for a query; routing decides whether to use local knowledge
 
 ## Notes
 
-- `.gitignore` excludes logs/, output/, papers/, knowledge/, and vector index artifacts.  
-- Commit `pyproject.toml`; commit `uv.lock` only if you use `uv` for deps.  
 - Arxiv MCP saves both PDF and parsed `.md` by design.  
-- If you renamed the GitHub repo, update your remote:  
-  `git remote set-url origin https://github.com/<you>/jarvis.git`.
+
