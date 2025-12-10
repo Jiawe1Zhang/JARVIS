@@ -37,7 +37,12 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
+async def async_input(prompt: str) -> str:
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, input, prompt)
+
+
+async def main_async() -> None:
     # Silence jieba/pkg_resources deprecation noise
     warnings.filterwarnings("ignore", message="pkg_resources is deprecated.*")
 
@@ -108,15 +113,13 @@ def main() -> None:
                 continue
             if domains and srv_domains.intersection(domains):
                 selected.append(server)
-        # fallback: router didn't propose tools -> load all to avoid missing capabilities
-        if not selected and (not domains and not specific):
-            return registry
+        # Router explicitly决定需要哪些工具；如果没提工具，就不加载，避免聊天场景全量暴露
         return selected
 
     try:
         while True:
             try:
-                raw_query = input("请输入查询/问题（留空则使用配置模板，输入exit退出）：").strip()
+                raw_query = (await async_input("请输入查询/问题（留空则使用配置模板，输入exit退出）：")).strip()
             except EOFError:
                 break
             if raw_query.lower() in {"exit", "quit"}:
@@ -244,7 +247,7 @@ def main() -> None:
             with ui.live():
                 if ui.enabled:
                     ui.log("User", query_text)
-                asyncio.run(run_agent())
+                await run_agent()
 
     finally:
         async def _close_all():
@@ -252,8 +255,8 @@ def main() -> None:
                 await client.close()
 
         if mcp_clients_cache:
-            asyncio.run(_close_all())
+            await _close_all()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main_async())
