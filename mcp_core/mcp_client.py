@@ -27,6 +27,8 @@ class MCPClient:
         """
             Connect to an MCP server
         """
+        if self.session:
+            return
         server_params = StdioServerParameters(
             command=self.command,
             args=self.args,

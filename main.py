@@ -50,7 +50,7 @@ def main() -> None:
     llm_cfg = cfg["llm"]
     embed_cfg = cfg["embedding"]
     knowledge_globs = cfg["knowledge_globs"]
-    query_template = cfg.get("query_template") or cfg["task_template"]
+    query_template = cfg.get("query_template") or ""
     vector_store_cfg = cfg.get("vector_store", {})
     conversation_cfg = cfg.get("conversation_logging", {})
     # knowledge toggle (new key "knowledge"; fallback to legacy "rag")
@@ -61,110 +61,37 @@ def main() -> None:
     # --- Output Directory ---
     output_dir = Path.cwd() / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
-    # --- Query (prompt from terminal; fallback to config template) ---
-    try:
-        raw_query = input("请输入查询/问题（留空则使用配置模板）：").strip()
-    except EOFError:
-        raw_query = ""
-    if not raw_query:
-        raw_query = query_template
-    try:
-        query_text = raw_query.format(output_path=str(output_dir))
-    except Exception:
-        query_text = raw_query
 
-    # --- Tracer Directory ---
-    run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    tracer_dir = Path.cwd() / "logs" / run_id
-    tracer = RunTracer(tracer_dir)
-    tracer.info("run_start", {"query": query_text})
-
-    # --- Intent Router (optional) ---
-    intent_router_cfg = cfg.get("intent_router", {"enabled": False})
-    intent_router_enabled = intent_router_cfg.get("enabled", False)
-    intent_result = {
-        "requires_rag": True,
-        "tool_sets": [],
-        "specific_tools": [],
-        "reasoning": "Router disabled; default to RAG.",
-    }
-
-    # --- Decide whether to use external knowledge ---
-    knowledge_enabled = knowledge_cfg.get("enabled", True)
-    use_rag = knowledge_enabled and intent_result["requires_rag"]
-
-    if intent_router_enabled:
-        try:
-            intent_result = get_intent(query_text, available_servers=mcp_registry)
-            tracer.info("intent_router", {"intent": intent_result})
-        except Exception as exc:
-            tracer.info("intent_router_error", {"error": str(exc)})
-            intent_result = {
-                "requires_rag": True,
-                "tool_sets": [],
-                "specific_tools": [],
-                "reasoning": "Router error; default to RAG.",
-            }
-        use_rag = knowledge_enabled and bool(intent_result.get("requires_rag"))
-    else:
-        # no intent router: fall back to config toggle only
-        use_rag = knowledge_enabled
-
-    if not knowledge_enabled:
-        tracer.info("knowledge_disabled", {"reason": "config.disabled"})
-    elif knowledge_enabled and not use_rag and intent_router_enabled:
-        tracer.info("rag_disabled", {"reason": "intent_router_requires_rag_false"})
-
-    # Developer-facing logging when TUI is off
-    if not ui.enabled:
-        log_title("INTENT ROUTER")
-        print(f"router_enabled: {intent_router_enabled}")
-        print(f"intent: {intent_result}")
-        print(f"use_external_knowledge: {use_rag}")
-
-    # --- Session Store (optional) ---
+    # Session store (persistent)
     session_enabled = conversation_cfg.get("enabled", False)
-    session_id = conversation_cfg.get("session_id") or run_id
     max_history_turns = conversation_cfg.get("max_history", 0)
     session_store = None
     if session_enabled:
         db_path = Path(conversation_cfg.get("db_path", "data/sessions.db"))
         session_store = SessionStore(db_path)
-        # Preload turn count for visibility
-        existing_turns = session_store.load_turns(session_id, limit=max_history_turns or 0)
-        current_turns = len(existing_turns)
-        max_turns_display = max_history_turns if max_history_turns else "unlimited"
-        if ui.enabled:
-            ui.log("System", f"Session {session_id}: {current_turns} stored / max {max_turns_display}")
+
+    # MCP client cache (persistent connections)
+    mcp_clients_cache: dict[str, MCPClient] = {}
+
+    def _build_client(server: dict) -> MCPClient:
+        name = server.get("name")
+        if name in mcp_clients_cache:
+            return mcp_clients_cache[name]
+        args = [arg.replace("{output_dir}", str(output_dir)) for arg in server["args"]]
+        env = server.get("env")
+        if env:
+            resolved_env = {
+                key: value.replace("{output_dir}", str(output_dir)) if isinstance(value, str) else value
+                for key, value in env.items()
+            }
         else:
-            log_title("SESSION")
-            print(f"Session {session_id}: {current_turns} stored / max {max_turns_display}")
+            resolved_env = None
+        client = MCPClient(command=server["command"], args=args, env=resolved_env)
+        mcp_clients_cache[name] = client
+        return client
 
-    # --- Embedding & RAG (base_url/api_key read from .env) ---
-    context = ""
-    if use_rag:
-        # 这里拿到的context没有用户的query以及query 的改写, 就是纯rag的上下文
-        context = retrieve_context(
-            task=query_text,
-            knowledge_globs=knowledge_globs,
-            embed_model=embed_cfg["model"],
-            chunking_strategy=embed_cfg["chunking_strategy"],
-            enable_rewrite=embed_cfg["enable_query_rewrite"],
-            rewrite_num_queries=embed_cfg.get("rewrite_num_queries", 3),
-            llm_model=llm_cfg["model"],
-            vector_store_config=vector_store_cfg,
-            tracer=tracer,
-            ui=ui,
-        )
-    else:
-        tracer.info(
-            "rag_disabled",
-            {"reason": "config.disabled" if not knowledge_enabled else "intent_router_requires_rag_false"},
-        )
-
-    # --- MCP Servers (domain-aware filtering) ---
-    def _select_servers(intent: dict, registry: list[dict]) -> list[dict]:
-        if not intent_router_enabled:
+    def _select_servers(intent: dict, registry: list[dict], router_enabled: bool) -> list[dict]:
+        if not router_enabled:
             return registry
         domains = set(intent.get("tool_sets") or intent.get("tool_domains") or [])
         specific = set(intent.get("specific_tools") or [])
@@ -177,68 +104,146 @@ def main() -> None:
                 continue
             if domains and srv_domains.intersection(domains):
                 selected.append(server)
-        # If intent provided no tool hints, load none (router decided tools not needed)
         if not domains and not specific:
             return []
         return selected
 
-    selected_servers = _select_servers(intent_result, mcp_registry)
-
-    if not ui.enabled:
-        log_title("MCP SERVER SELECTION")
-        print(f"available: {[s.get('name') for s in mcp_registry]}")
-        print(f"selected: {[s.get('name') for s in selected_servers]}")
-
-    mcp_clients = []
-    for server in selected_servers:
-        args = [arg.replace("{output_dir}", str(output_dir)) for arg in server["args"]]
-        env = server.get("env")
-        if env:
-            resolved_env = {
-                key: value.replace("{output_dir}", str(output_dir)) if isinstance(value, str) else value
-                for key, value in env.items()
-            }
-        else:
-            resolved_env = None
-
-        mcp_clients.append(MCPClient(command=server["command"], args=args, env=resolved_env))
-
-    # --- Agent (model read from config, others from .env) ---
-    model_name = llm_cfg["model"]
-    system_prompt = load_prompt("agent_system.md")
-    if session_enabled:
-        system_prompt += "\n\nYou are a stateful assistant with access to prior conversation history. Use it to stay consistent, avoid repetition, and reference past context when helpful."
-    agent = Agent(
-        model_name,
-        mcp_clients,
-        context=context,
-        system_prompt=system_prompt,
-        tracer=tracer,
-        session_store=session_store,
-        session_id=session_id,
-        max_history_turns=max_history_turns,
-        ui=ui,
-    )
-
-    async def run_agent():
-        await agent.init()
-        try:
-            # 这里传入用户的任务
-            await agent.invoke(query_text)
-        finally:
-            await agent.close()
-
     try:
-        with ui.live():
-            if ui.enabled:
-                ui.log("User", query_text)
-            asyncio.run(run_agent())
-    except Exception as exc:
-        tracer.info("run_error", {"error": str(exc)})
-        raise
-    else:
-        # flush history only on successful run
-        agent.flush_history()
+        while True:
+            try:
+                raw_query = input("请输入查询/问题（留空则使用配置模板，输入exit退出）：").strip()
+            except EOFError:
+                break
+            if raw_query.lower() in {"exit", "quit"}:
+                break
+            if not raw_query:
+                raw_query = query_template
+            try:
+                query_text = raw_query.format(output_path=str(output_dir))
+            except Exception:
+                query_text = raw_query
+
+            run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            tracer_dir = Path.cwd() / "logs" / run_id
+            tracer = RunTracer(tracer_dir)
+            tracer.info("run_start", {"query": query_text})
+
+            # Intent Router
+            intent_router_cfg = cfg.get("intent_router", {"enabled": False})
+            intent_router_enabled = intent_router_cfg.get("enabled", False)
+            intent_result = {
+                "requires_rag": True,
+                "tool_sets": [],
+                "specific_tools": [],
+                "reasoning": "Router disabled; default to RAG.",
+                "source": "default",
+            }
+
+            knowledge_enabled = knowledge_cfg.get("enabled", True)
+            use_rag = knowledge_enabled and intent_result["requires_rag"]
+
+            if intent_router_enabled:
+                try:
+                    intent_result = get_intent(query_text, available_servers=mcp_registry)
+                    tracer.info("intent_router", {"intent": intent_result})
+                except Exception as exc:
+                    tracer.info("intent_router_error", {"error": str(exc)})
+                    intent_result = {
+                        "requires_rag": True,
+                        "tool_sets": [],
+                        "specific_tools": [],
+                        "reasoning": "Router error; default to RAG.",
+                        "source": "default",
+                    }
+                use_rag = knowledge_enabled and bool(intent_result.get("requires_rag"))
+            else:
+                use_rag = knowledge_enabled
+
+            if not knowledge_enabled:
+                tracer.info("knowledge_disabled", {"reason": "config.disabled"})
+            elif knowledge_enabled and not use_rag and intent_router_enabled:
+                tracer.info("rag_disabled", {"reason": "intent_router_requires_rag_false"})
+
+            if not ui.enabled:
+                log_title("INTENT ROUTER")
+                print(f"router_enabled: {intent_router_enabled}")
+                print(f"intent: {intent_result}")
+                print(f"use_external_knowledge: {use_rag}")
+                print(f"resolved_by: {intent_result.get('source', 'unknown')}")
+
+            # Session info visibility
+            session_id = conversation_cfg.get("session_id") or run_id
+            if session_enabled and session_store:
+                existing_turns = session_store.load_turns(session_id, limit=max_history_turns or 0)
+                current_turns = len(existing_turns)
+                max_turns_display = max_history_turns if max_history_turns else "unlimited"
+                if ui.enabled:
+                    ui.log("System", f"Session {session_id}: {current_turns} stored / max {max_turns_display}")
+                else:
+                    log_title("SESSION")
+                    print(f"Session {session_id}: {current_turns} stored / max {max_turns_display}")
+
+            # RAG context
+            context = ""
+            if use_rag:
+                context = retrieve_context(
+                    task=query_text,
+                    knowledge_globs=knowledge_globs,
+                    embed_model=embed_cfg["model"],
+                    chunking_strategy=embed_cfg["chunking_strategy"],
+                    enable_rewrite=embed_cfg["enable_query_rewrite"],
+                    rewrite_num_queries=embed_cfg.get("rewrite_num_queries", 3),
+                    llm_model=llm_cfg["model"],
+                    vector_store_config=vector_store_cfg,
+                    tracer=tracer,
+                    ui=ui,
+                )
+            else:
+                tracer.info(
+                    "rag_disabled",
+                    {"reason": "config.disabled" if not knowledge_enabled else "intent_router_requires_rag_false"},
+                )
+
+            # MCP selection
+            selected_servers = _select_servers(intent_result, mcp_registry, intent_router_enabled)
+            if not ui.enabled:
+                log_title("MCP SERVER SELECTION")
+                print(f"available: {[s.get('name') for s in mcp_registry]}")
+                print(f"selected: {[s.get('name') for s in selected_servers]}")
+
+            selected_clients = [_build_client(srv) for srv in selected_servers]
+
+            model_name = llm_cfg["model"]
+            system_prompt = load_prompt("agent_system.md")
+            if session_enabled:
+                system_prompt += "\n\nYou are a stateful assistant with access to prior conversation history. Use it to stay consistent, avoid repetition, and reference past context when helpful."
+            agent = Agent(
+                model_name,
+                selected_clients,
+                context=context,
+                system_prompt=system_prompt,
+                tracer=tracer,
+                session_store=session_store,
+                session_id=session_id,
+                max_history_turns=max_history_turns,
+                ui=ui,
+            )
+
+            async def run_agent():
+                await agent.init()
+                try:
+                    await agent.invoke(query_text)
+                finally:
+                    agent.flush_history()
+
+            with ui.live():
+                if ui.enabled:
+                    ui.log("User", query_text)
+                asyncio.run(run_agent())
+
+    finally:
+        for client in mcp_clients_cache.values():
+            asyncio.run(client.close())
 
 
 if __name__ == "__main__":

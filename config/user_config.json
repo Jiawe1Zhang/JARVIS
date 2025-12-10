@@ -1,6 +1,9 @@
 {
-  "task_template": "把刚才我写的评论通过让人恶心搞怪的语气重新写一遍,作为一个新的评论写到Notion的评论区里去",
-  "knowledge_globs": ["knowledge/*.md", "knowledge/*.pdf", "knowledge/*.csv"],
+  "knowledge_globs": [
+    "knowledge/*.md",
+    "knowledge/*.pdf",
+    "knowledge/*.csv"
+  ],
   "output_dir": "output",
   "llm": {
     "model": "gpt-5"
@@ -12,7 +15,7 @@
     "rewrite_num_queries": 3
   },
   "vector_store": {
-    "backend": "faiss", 
+    "backend": "faiss",
     "index_factory": "Flat",
     "path": "data/faiss.index",
     "meta_path": "data/faiss.meta.json"
@@ -34,17 +37,27 @@
     {
       "name": "fetch",
       "command": "uvx",
-      "args": ["mcp-server-fetch"]
+      "args": [
+        "mcp-server-fetch"
+      ]
     },
     {
       "name": "filesystem",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "{output_dir}"]
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "{output_dir}"
+      ]
     },
     {
       "name": "Notion",
       "command": "npx",
-      "args": ["-y", "mcp-remote", "https://mcp.notion.com/mcp"],
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.notion.com/mcp"
+      ],
       "env": {
         "NOTION_TOKEN": "${NOTION_TOKEN}"
       }

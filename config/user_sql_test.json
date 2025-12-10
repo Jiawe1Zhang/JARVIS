@@ -1,5 +1,5 @@
 {
-  "task_template": "我之前问了你什么样的问题, 总结下回答我",
+  "query_template": "我之前问了你什么样的问题, 总结下回答我",
   "knowledge_globs": ["knowledge/*.md", "knowledge/*.pdf", "knowledge/*.csv"],
   "output_dir": "output",
   "llm": {

@@ -39,15 +39,14 @@
     "tools": ["notion_client"]
   },
   {
-    "name": "arxiv",
+    "name": "arxiv-mcp-server",
     "command": "uv",
     "args": [
+      "tool",
       "run",
-      "--with",
-      "mcp-simple-arxiv",
-      "python",
-      "-m",
-      "mcp_simple_arxiv"
+      "arxiv-mcp-server",
+      "--storage-path",
+      "papers/"
     ],
     "domains": ["SEARCH"],
     "tools": ["arxiv"]

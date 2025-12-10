@@ -1,6 +1,5 @@
 {
   "query_template": "帮我在Arxiv找些最新的agent的文章, 并且把他们的一些核心实验方法总结到我的一个新的Notion页面里, 标题要加上",
-  "task_template": "帮我在Arxiv找些最新的agent的文章, 并且把他们的一些核心实验方法总结到我的一个新的Notion页面里, 标题要加上",
   "knowledge_globs": [
     "knowledge/*.md",
     "knowledge/*.pdf",
@@ -26,7 +25,7 @@
     "enabled": true,
     "backend": "sqlite",
     "db_path": "data/sessions.db",
-    "session_id": "6",
+    "session_id": "7",
     "max_history": 5
   },
   "tui": {

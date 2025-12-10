@@ -36,3 +36,9 @@ coverage.xml
 data/*.index
 data/*.meta.json
 data/faiss*
+
+
+logs/
+papers/
+output/
+knowledge/
