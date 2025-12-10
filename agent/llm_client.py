@@ -69,8 +69,6 @@ class ChatOpenAI:
             self.messages.append({"role": "user", "content": context})
 
     def chat(self, prompt: Optional[str] = None) -> Dict[str, Any]:
-        if not self.ui.enabled:
-            log_title("CHAT")
         if prompt:
             user_msg = {"role": "user", "content": prompt}
             # 消息列表最后加入用户的 prompt
@@ -100,11 +98,6 @@ class ChatOpenAI:
             )
             for tool_call in choice.tool_calls or []
         ]
-
-        if not self.ui.enabled:
-            log_title("RESPONSE")
-            if content:
-                print(content)
 
         if self.tracer:
             self.tracer.log_event(

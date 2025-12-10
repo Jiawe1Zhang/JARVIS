@@ -32,7 +32,7 @@ def retrieve_context(
         enable_rewrite: Whether to enable query rewriting
         rewrite_num_queries: Number of queries to generate if rewriting is enabled
         llm_model: LLM model name for query rewriting
-        vector_store_config: Vector store backend config (memory/faiss, paths, etc.)
+        vector_store_config: Vector store backend config (faiss only)
         
     Note:
         base_url and api_key are read from .env environment variables
@@ -73,6 +73,13 @@ def retrieve_context(
                 if content.strip():
                     # doc_id is file name
                     retriever.embed_document(content)
+    else:
+        # reuse FAISS index: hydrate keyword buffer from persisted docs if available
+        if hasattr(retriever.vector_store, "id_to_doc"):
+            retriever.documents_buffer = list(getattr(retriever.vector_store, "id_to_doc", {}).values())
+
+    # build keyword/BM25 index for hybrid search
+    retriever.build_keyword_index()
             
     # --- Retrieval Logic ---
     search_queries = [task]
@@ -92,11 +99,13 @@ def retrieve_context(
 
     all_results = []
     seen_texts = set()
+    score_logs = []
     
     for query in search_queries:
         # If rewrite is enabled, query fewer items per query to avoid too long context
         k = 2 if enable_rewrite else 3
         results = retriever.retrieve(query, top_k=k)
+        score_logs.append({"query": query, "scores": retriever.last_scores})
         
         for text in results:
             if text not in seen_texts:
@@ -104,6 +113,19 @@ def retrieve_context(
                 seen_texts.add(text)
 
     context = "\n\n".join(all_results)
+    if not ui.enabled and score_logs:
+        log_title("HYBRID SCORES")
+        for entry in score_logs:
+            print(f"Query: {entry['query']}")
+            for rec in entry["scores"]:
+                v = rec.get("vector_score")
+                k = rec.get("keyword_score")
+                fused = rec.get("fused_score")
+                fused_str = f"{fused:.4f}" if fused is not None else "0.0000"
+                v_str = f"{v:.4f}" if isinstance(v, (int, float)) else str(v)
+                k_str = f"{k:.4f}" if isinstance(k, (int, float)) else str(k)
+                preview = rec.get("doc", "")[:80].replace("\n", " ")
+                print(f"  fused={fused_str}  vec={v_str}  bm25={k_str}  {preview}")
     if ui.enabled:
         ui.detail("RAG Context", context if context else "[dim]No context retrieved[/dim]")
         ui.stage("RAG Retrieval", "completed")

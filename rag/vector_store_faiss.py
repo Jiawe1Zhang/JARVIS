@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 
 class FaissVectorStore:
@@ -32,7 +32,7 @@ class FaissVectorStore:
         self.chunk_strategy: Optional[str] = None
         self.data_signature: Optional[str] = None
 
-    # --- Public API (matches in-memory store shape) ---
+    # --- Public API ---
     def add_embedding(self, embedding: List[float], document: str) -> None:
         faiss, np = self._require_faiss()
         self._ensure_index(len(embedding), faiss)
@@ -42,19 +42,30 @@ class FaissVectorStore:
         self.id_to_doc[int(ids[0])] = document
 
     def search(self, query_embedding: List[float], top_k: int = 3) -> List[str]:
+        results = [doc for doc, _ in self.search_with_scores(query_embedding, top_k)]
+        return results
+
+    def search_with_scores(self, query_embedding: List[float], top_k: int = 3) -> List[Tuple[str, float]]:
         faiss, np = self._require_faiss()
         if not self.index or self.index.ntotal == 0:
             return []
         query = np.asarray([query_embedding], dtype="float32")
         distances, indices = self.index.search(query, top_k)
-        results: List[str] = []
-        for doc_id in indices[0]:
+        results: List[Tuple[str, float]] = []
+        for idx, doc_id in enumerate(indices[0]):
             if doc_id == -1:
                 continue
             doc = self.id_to_doc.get(int(doc_id))
             if doc:
-                results.append(doc)
+                score = float(distances[0][idx])
+                results.append((doc, score))
         return results
+
+    def all_documents(self) -> List[str]:
+        """
+        Return all stored documents (order is not guaranteed).
+        """
+        return list(self.id_to_doc.values())
 
     def size(self) -> int:
         return int(self.index.ntotal) if self.index else 0

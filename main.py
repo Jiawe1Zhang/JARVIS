@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import json
 import os
+import warnings
 from pathlib import Path
 from typing import List
 
@@ -25,7 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Jarvis Agent Runner")
     parser.add_argument(
         "--config",
-        default="config/user_arxiv&notion.json",
+        default="config/user_RAG.json",
         help="Path to user config JSON (defaults to user_arxiv&notion.json)",
     )
     parser.add_argument(
@@ -37,6 +38,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    # Silence jieba/pkg_resources deprecation noise
+    warnings.filterwarnings("ignore", message="pkg_resources is deprecated.*")
+
     args = parse_args()
     load_dotenv()  # Load OPENAI_BASE_URL, OPENAI_API_KEY, OLLAMA_EMBED_BASE_URL etc. from .env
     cfg = load_user_config(args.config)
@@ -70,7 +74,7 @@ def main() -> None:
         db_path = Path(conversation_cfg.get("db_path", "data/sessions.db"))
         session_store = SessionStore(db_path)
 
-    # MCP client cache (persistent connections)
+    # MCP client cache (reuse connections across turns)
     mcp_clients_cache: dict[str, MCPClient] = {}
 
     def _build_client(server: dict) -> MCPClient:
@@ -104,8 +108,9 @@ def main() -> None:
                 continue
             if domains and srv_domains.intersection(domains):
                 selected.append(server)
-        if not domains and not specific:
-            return []
+        # fallback: router didn't propose tools -> load all to avoid missing capabilities
+        if not selected and (not domains and not specific):
+            return registry
         return selected
 
     try:
@@ -242,8 +247,12 @@ def main() -> None:
                 asyncio.run(run_agent())
 
     finally:
-        for client in mcp_clients_cache.values():
-            asyncio.run(client.close())
+        async def _close_all():
+            for client in mcp_clients_cache.values():
+                await client.close()
+
+        if mcp_clients_cache:
+            asyncio.run(_close_all())
 
 
 if __name__ == "__main__":
