@@ -43,11 +43,11 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 NOTION_TOKEN=ntn_...
 ```
 
-3) 配置  
+3) 启动配置  
 - 用户配置：`config/user_config.json`（或自定义）。  
 - MCP 注册表：`config/mcp_servers.json`（域/工具，用于路由筛选）。
 
-关键开关示例：
+关键配置示例：
 ```json
 "knowledge": { "enabled": true },
 "intent_router": { "enabled": true },
@@ -68,9 +68,6 @@ python main.py \
 终端输入 query；路由决定是否用本地知识，以及加载哪些 MCP 服务器。MCP 连接首次按需建立，进程内复用。
 
 ## 其他说明
-
-- `.gitignore` 已忽略 logs/、output/、papers/、knowledge/ 及向量索引产物。  
-- `pyproject.toml` 建议提交；`uv.lock` 仅在用 `uv` 管理依赖时提交。  
+  
 - Arxiv MCP 默认会保存 PDF 和解析生成的 `.md`。  
-- 如果你重命名了 GitHub 仓库，更新远端：  
-  `git remote set-url origin https://github.com/<you>/jarvis.git`。
+
